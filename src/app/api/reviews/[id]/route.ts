@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import type { Review } from "~/app/page";
+import { type BodyData } from "../route";
 
 export const GET = async (req: Request) => {
   const id = req.url.split("/").pop();
@@ -23,16 +24,11 @@ export const GET = async (req: Request) => {
   }
 };
 
-interface BodyData {
-  title: string;
-  content: string;
-  author: string;
-  rating: number;
-}
-
 export const PUT = async (req: Request) => {
   const id = req.url.split("/").pop();
   const body = (await req.json()) as BodyData;
+
+  console.log(id, body);
 
   if (Number.isNaN(Number(id))) {
     return new Response("Wrong id format", { status: 400 });

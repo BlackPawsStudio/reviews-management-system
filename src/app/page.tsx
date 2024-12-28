@@ -48,7 +48,7 @@ const DashboardPage = () => {
   );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4">
+    <div className="mx-auto max-w-6xl space-y-4 p-4">
       <h1 className="text-xl font-bold">Reviews Dashboard</h1>
       <div className="flex gap-x-4">
         <Input
@@ -74,21 +74,23 @@ const DashboardPage = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
+              <TableHead>Content</TableHead>
               <TableHead>Author</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="w-0">Rating</TableHead>
+              <TableHead className="w-0">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data?.map((review) => (
-              <TableRow key={review.id}>
+              <TableRow key={review.id + review.title}>
                 <TableCell>{review.title}</TableCell>
+                <TableCell>{review.content}</TableCell>
                 <TableCell>{review.author}</TableCell>
-                <TableCell>{review.rating}</TableCell>
+                <TableCell className="text-center">{review.rating}</TableCell>
                 <TableCell className="flex gap-x-4">
                   <Button
                     variant="secondary"
-                    onClick={() => router.push(`/review/${review.id}`)}
+                    onClick={() => router.push(`/details/${review.id}`)}
                   >
                     Edit
                   </Button>

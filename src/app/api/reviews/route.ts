@@ -9,7 +9,7 @@ export const GET = async () => {
   return Response.json({ data });
 };
 
-interface BodyData {
+export interface BodyData {
   title: string;
   content: string;
   author: string;
