@@ -10,11 +10,13 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Post {
+model Review {
     id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    title     String
+    content   String
+    rating    Int
+    author    String
+    createdAt String
 
-    @@index([name])
+    @@index([title])
 }

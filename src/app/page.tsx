@@ -19,32 +19,33 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { useQuery } from "react-query";
 
-interface Review {
+export interface Review {
   id: number;
   title: string;
   content: string;
-  rating: number; // 1 to 5
+  rating: number;
   author: string;
-  createdAt: string; // ISO date
+  createdAt: string;
 }
 
-export default function DashboardPage() {
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: 1,
-      title: "Great book",
-      content: "I really enjoyed this book",
-      rating: 5,
-      author: "John Doe",
-      createdAt: "2021-01-01",
-    },
-  ]);
-  const [loading, setLoading] = useState(false);
+const DashboardPage = () => {
   const [filters, setFilters] = useState({ author: "", rating: "", title: "" });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const router = useRouter();
+
+  const { data, isLoading, refetch } = useQuery(
+    ["reviews"],
+    async (): Promise<Review[]> => {
+      const res = await fetch("/api/reviews");
+
+      const { data } = (await res.json()) as { data: Review[] };
+
+      return data;
+    },
+  );
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-4">
@@ -63,10 +64,10 @@ export default function DashboardPage() {
           type="number"
           onChange={(e) => setFilters({ ...filters, rating: e.target.value })}
         />
-        <Button onClick={() => router.push("/review/new")}>Add Review</Button>
+        <Button onClick={() => router.push("/details")}>Add Review</Button>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <Skeleton className="h-[73px]" count={5} />
       ) : (
         <Table>
@@ -79,7 +80,7 @@ export default function DashboardPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reviews.map((review) => (
+            {data?.map((review) => (
               <TableRow key={review.id}>
                 <TableCell>{review.title}</TableCell>
                 <TableCell>{review.author}</TableCell>
@@ -118,10 +119,21 @@ export default function DashboardPage() {
             Are you sure you want to delete this review?
           </DialogTitle>
           <DialogClose asChild>
-            <Button variant="destructive">Delete</Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                await fetch(`/api/reviews/${deleteId}`, { method: "DELETE" });
+                setShowDeleteModal(false);
+                await refetch();
+              }}
+            >
+              Delete
+            </Button>
           </DialogClose>
         </DialogContent>
       </Dialog>
     </div>
   );
-}
+};
+
+export default DashboardPage;
