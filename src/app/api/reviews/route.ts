@@ -5,17 +5,54 @@ const pageSize = 10;
 
 export const GET = async (req: Request) => {
   const page = Number(new URL(req.url).searchParams.get("page")) ?? 1;
+  const search = new URL(req.url).searchParams.get("search");
+  const author = new URL(req.url).searchParams.get("author");
+  const rating = new URL(req.url).searchParams.get("rating");
 
   const prisma = new PrismaClient();
+
+  const where = {
+    ...(search
+      ? {
+          title: {
+            contains: search,
+          },
+        }
+      : {}),
+    ...(author
+      ? {
+          author,
+        }
+      : {}),
+    ...(rating
+      ? {
+          rating: Number(rating),
+        }
+      : {}),
+  };
 
   const data: Review[] = await prisma.review.findMany({
     take: pageSize,
     skip: page * pageSize - pageSize,
+    where,
   });
 
-  const total = await prisma.review.count();
+  const total = await prisma.review.count({ where });
 
-  return Response.json({ data, pages: Math.ceil(total / pageSize) });
+  const uniqueAuthors = (
+    await prisma.review.findMany({
+      select: {
+        author: true,
+      },
+      distinct: ["author"],
+    })
+  ).map((el) => el.author);
+
+  return Response.json({
+    data,
+    pages: Math.ceil(total / pageSize),
+    uniqueAuthors,
+  });
 };
 
 export interface BodyData {
@@ -41,5 +78,5 @@ export const POST = async (req: Request) => {
     return Response.json({ data: review });
   }
 
-  return Response.error();
+  return new Response("Invalid body", { status: 400 });
 };

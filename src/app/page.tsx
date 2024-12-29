@@ -29,6 +29,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "~/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { useToast } from "~/hooks/use-toast";
 
 export interface Review {
   id: number;
@@ -48,27 +56,58 @@ export const DashboardPage = ({
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const router = useRouter();
 
+  const [authorFilter, setAuthorFilter] = useState<string[]>([]);
+
+  const [filters, setFilters] = useState<{
+    search: string;
+    author?: string;
+    rating?: string;
+  }>({
+    search: "",
+  });
+
   const [page, setPage] = useState(1);
   const [pagesCount, setPagesCount] = useState(1);
 
+  const { toast } = useToast();
+
   const { data, isLoading, refetch } = useQuery(
-    ["reviews", page],
+    ["reviews", page, filters],
     async (): Promise<Review[]> => {
-      const res = await fetch(
-        "/api/reviews?" +
-          new URLSearchParams({
-            page: String(page ?? 1),
-          }).toString(),
-      );
+      try {
+        const res = await fetch(
+          "/api/reviews?" +
+            new URLSearchParams({
+              page: String(page ?? 1),
+              search: filters.search,
+              ...(filters.author ? { author: filters.author } : {}),
+              ...(filters.rating ? { rating: filters.rating } : {}),
+            }).toString(),
+        );
 
-      const { data, pages } = (await res.json()) as {
-        data: Review[];
-        pages: number;
-      };
+        if (res.status !== 200) {
+          throw new Error(res.status + ": " + (await res.text()));
+        }
 
-      setPagesCount(pages);
+        const { data, pages, uniqueAuthors } = (await res.json()) as {
+          data: Review[];
+          pages: number;
+          uniqueAuthors: string[];
+        };
 
-      return data;
+        setPagesCount(pages);
+        setAuthorFilter(uniqueAuthors);
+
+        return data;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "An error occurred";
+        toast({
+          title: message,
+          variant: "destructive",
+        });
+        return [];
+      }
     },
   );
 
@@ -82,9 +121,75 @@ export const DashboardPage = ({
     <div className="mx-auto max-w-6xl space-y-4 p-4">
       <h1 className="text-xl font-bold">Reviews Dashboard</h1>
       <div className="flex gap-x-4">
-        <Input placeholder="Search by title" />
-        <Input placeholder="Filter by author" />
-        <Input placeholder="Filter by rating" type="number" />
+        <Input
+          placeholder="Search by title"
+          value={filters.search}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, search: e.target.value }))
+          }
+        />
+        <div className="relative w-full">
+          <Select
+            key={filters.author}
+            value={filters.author}
+            onValueChange={(value) =>
+              setFilters((prev) => ({ ...prev, author: value }))
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Filter by author" />
+            </SelectTrigger>
+            <SelectContent>
+              {authorFilter.map((author) => (
+                <SelectItem key={author} value={author}>
+                  {author}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filters.author && (
+            <Button
+              variant="outline"
+              className="absolute right-1.5 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full p-0"
+              onClick={() =>
+                setFilters((prev) => ({ ...prev, author: undefined }))
+              }
+            >
+              X
+            </Button>
+          )}
+        </div>
+        <div className="relative w-full">
+          <Select
+            key={filters.rating}
+            value={filters.rating}
+            onValueChange={(value) =>
+              setFilters((prev) => ({ ...prev, rating: value }))
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Filter by rating" />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 5 }, (_, i) => i + 1).map((idx) => (
+                <SelectItem key={idx} value={idx.toString()}>
+                  {idx}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filters.rating && (
+            <Button
+              variant="outline"
+              className="absolute right-1.5 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full p-0"
+              onClick={() =>
+                setFilters((prev) => ({ ...prev, rating: undefined }))
+              }
+            >
+              X
+            </Button>
+          )}
+        </div>
         <Button onClick={() => router.push("/review/new")}>Add Review</Button>
       </div>
 
@@ -97,6 +202,7 @@ export const DashboardPage = ({
               <TableHead>Title</TableHead>
               <TableHead>Content</TableHead>
               <TableHead>Author</TableHead>
+              <TableHead className="w-0">Created At</TableHead>
               <TableHead className="w-0">Rating</TableHead>
               <TableHead className="w-0">Actions</TableHead>
             </TableRow>
@@ -107,6 +213,7 @@ export const DashboardPage = ({
                 <TableCell>{review.title}</TableCell>
                 <TableCell>{review.content}</TableCell>
                 <TableCell>{review.author}</TableCell>
+                <TableCell>{review.createdAt}</TableCell>
                 <TableCell className="text-center">{review.rating}</TableCell>
                 <TableCell className="flex gap-x-4">
                   <Button

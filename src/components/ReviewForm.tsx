@@ -9,6 +9,7 @@ import { z } from "zod";
 import { type Review } from "~/app/page";
 import { type BodyData } from "~/app/api/reviews/route";
 import { useEffect, useState } from "react";
+import { useToast } from "~/hooks/use-toast";
 
 const schema = z.object({
   title: z.string().nonempty("Title is required"),
@@ -34,38 +35,68 @@ export const ReviewForm = ({ id }: ReviewFormProps) => {
     ...(defaultValues ? { defaultValues } : {}),
     onSubmit: async (data) => {
       mutate(data.value);
-      router.push("/");
     },
   });
+
+  const { toast } = useToast();
 
   useEffect(() => {
     if (id !== undefined) {
       const getSavedReview = async () => {
         await fetch(`/api/reviews/${id}`)
-          .then(async (res) => (await res.json()) as { data: BodyData })
+          .then(async (res) => {
+            try {
+              if (res.status !== 200) {
+                throw new Error(res.status + ": " + (await res.text()));
+              }
+
+              return (await res.json()) as { data: BodyData };
+            } catch (error) {
+              const message =
+                error instanceof Error ? error.message : "An error occurred";
+              toast({
+                title: message,
+                variant: "destructive",
+              });
+              return undefined;
+            }
+          })
           .then(async (data) => {
-            setDefaultValues(data.data);
+            if (data) {
+              setDefaultValues(data.data);
+            }
           });
       };
       void getSavedReview();
     }
-  }, [form, id]);
+  }, [form, id, toast]);
 
   const { mutate, isLoading } = useMutation({
     mutationFn: async (review: BodyData): Promise<Review | undefined> => {
-      const response = await fetch(`/api/reviews/${id ?? ""}`, {
-        method: id ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(review),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to save review");
+      try {
+        const res = await fetch(`/api/reviews/${id ?? ""}`, {
+          method: id ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(review),
+        });
+
+        if (res.status !== 200) {
+          throw new Error(res.status + ": " + (await res.text()));
+        }
+
+        return (await res.json()) as Review;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "An error occurred";
+        toast({
+          title: message,
+          variant: "destructive",
+        });
       }
-      return (await response.json()) as Review;
     },
-    onSettled: async (newReview) => {
+    onSuccess: async (newReview) => {
       await queryClient.cancelQueries("reviews");
       const previousReviews = queryClient.getQueryData("reviews");
       if (newReview) {
@@ -74,6 +105,7 @@ export const ReviewForm = ({ id }: ReviewFormProps) => {
         });
       }
       await queryClient.invalidateQueries("reviews");
+      router.push("/");
       return { previousReviews };
     },
   });
