@@ -106,7 +106,9 @@ export const ReviewForm = ({ id }: ReviewFormProps) => {
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   className={
-                    field.state.meta.errors.length ? "border-destructive" : ""
+                    field.state.meta.errors.length
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : "focus-visible:ring-muted"
                   }
                   disabled={isLoading}
                 />
@@ -132,7 +134,9 @@ export const ReviewForm = ({ id }: ReviewFormProps) => {
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   className={
-                    field.state.meta.errors.length ? "border-destructive" : ""
+                    field.state.meta.errors.length
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : "focus-visible:ring-muted"
                   }
                   disabled={isLoading}
                 />
@@ -158,7 +162,9 @@ export const ReviewForm = ({ id }: ReviewFormProps) => {
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   className={
-                    field.state.meta.errors.length ? "border-destructive" : ""
+                    field.state.meta.errors.length
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : "focus-visible:ring-muted"
                   }
                   disabled={isLoading}
                 />
@@ -185,7 +191,9 @@ export const ReviewForm = ({ id }: ReviewFormProps) => {
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(+e.target.value)}
                   className={
-                    field.state.meta.errors.length ? "border-destructive" : ""
+                    field.state.meta.errors.length
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : "focus-visible:ring-muted"
                   }
                   disabled={isLoading}
                 />

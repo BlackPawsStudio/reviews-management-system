@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
@@ -20,6 +20,15 @@ import {
 } from "~/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { useQuery } from "react-query";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "~/components/ui/pagination";
 
 export interface Review {
   id: number;
@@ -30,41 +39,53 @@ export interface Review {
   createdAt: string;
 }
 
-const DashboardPage = () => {
-  const [filters, setFilters] = useState({ author: "", rating: "", title: "" });
+export const DashboardPage = ({
+  params,
+}: {
+  params: Promise<{ page: string }>;
+}) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const router = useRouter();
 
-  const { data, isLoading, refetch } = useQuery(
-    ["reviews"],
-    async (): Promise<Review[]> => {
-      const res = await fetch("/api/reviews");
+  const [page, setPage] = useState(1);
+  const [pagesCount, setPagesCount] = useState(1);
 
-      const { data } = (await res.json()) as { data: Review[] };
+  const { data, isLoading, refetch } = useQuery(
+    ["reviews", page],
+    async (): Promise<Review[]> => {
+      const res = await fetch(
+        "/api/reviews?" +
+          new URLSearchParams({
+            page: String(page ?? 1),
+          }).toString(),
+      );
+
+      const { data, pages } = (await res.json()) as {
+        data: Review[];
+        pages: number;
+      };
+
+      setPagesCount(pages);
 
       return data;
     },
   );
 
+  useEffect(() => {
+    void (async () => {
+      setPage(Number((await params).page ?? 1));
+    })();
+  }, [params]);
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-4">
       <h1 className="text-xl font-bold">Reviews Dashboard</h1>
       <div className="flex gap-x-4">
-        <Input
-          placeholder="Search by title"
-          onChange={(e) => setFilters({ ...filters, title: e.target.value })}
-        />
-        <Input
-          placeholder="Filter by author"
-          onChange={(e) => setFilters({ ...filters, author: e.target.value })}
-        />
-        <Input
-          placeholder="Filter by rating"
-          type="number"
-          onChange={(e) => setFilters({ ...filters, rating: e.target.value })}
-        />
-        <Button onClick={() => router.push("/details")}>Add Review</Button>
+        <Input placeholder="Search by title" />
+        <Input placeholder="Filter by author" />
+        <Input placeholder="Filter by rating" type="number" />
+        <Button onClick={() => router.push("/review/new")}>Add Review</Button>
       </div>
 
       {isLoading ? (
@@ -90,7 +111,7 @@ const DashboardPage = () => {
                 <TableCell className="flex gap-x-4">
                   <Button
                     variant="secondary"
-                    onClick={() => router.push(`/details/${review.id}`)}
+                    onClick={() => router.push(`/review/${review.id}`)}
                   >
                     Edit
                   </Button>
@@ -109,6 +130,62 @@ const DashboardPage = () => {
           </TableBody>
         </Table>
       )}
+      {pagesCount > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => {
+                  setPage((prev) => Math.max(prev - 1, 1));
+                }}
+              />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink isActive={page === 1} onClick={() => setPage(1)}>
+                {1}
+              </PaginationLink>
+            </PaginationItem>
+            {page - 1 > 2 && (
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+            )}
+            {Array.from({ length: pagesCount - 1 }, (_, i) => i + 1).map((i) =>
+              Math.abs(page - i) < 2 && i !== 1 ? (
+                <PaginationItem key={i}>
+                  <PaginationLink
+                    isActive={page === i}
+                    onClick={() => setPage(i)}
+                  >
+                    {i}
+                  </PaginationLink>
+                </PaginationItem>
+              ) : null,
+            )}
+            {pagesCount - page > 2 && (
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+            )}
+            <PaginationItem>
+              <PaginationLink
+                isActive={page === pagesCount}
+                onClick={() => setPage(pagesCount)}
+              >
+                {pagesCount}
+              </PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  setPage((prev) => Math.min(prev + 1, pagesCount))
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+
       <Dialog
         open={showDeleteModal}
         onOpenChange={(e) => {

@@ -1,12 +1,21 @@
 import { PrismaClient } from "@prisma/client";
 import type { Review } from "~/app/page";
 
-export const GET = async () => {
+const pageSize = 10;
+
+export const GET = async (req: Request) => {
+  const page = Number(new URL(req.url).searchParams.get("page")) ?? 1;
+
   const prisma = new PrismaClient();
 
-  const data: Review[] = await prisma.review.findMany();
+  const data: Review[] = await prisma.review.findMany({
+    take: pageSize,
+    skip: page * pageSize - pageSize,
+  });
 
-  return Response.json({ data });
+  const total = await prisma.review.count();
+
+  return Response.json({ data, pages: Math.ceil(total / pageSize) });
 };
 
 export interface BodyData {
