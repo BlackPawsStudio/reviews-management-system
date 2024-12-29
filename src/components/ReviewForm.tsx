@@ -11,7 +11,7 @@ import { type BodyData } from "~/app/api/reviews/route";
 import { useEffect, useState } from "react";
 import { useToast } from "~/hooks/use-toast";
 
-const schema = z.object({
+export const schema = z.object({
   title: z.string().nonempty("Title is required"),
   content: z.string().nonempty("Content is required"),
   rating: z.number().int().min(1, "Rating must be between 1 and 5").max(5),

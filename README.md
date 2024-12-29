@@ -27,3 +27,17 @@ You can check out the [create-t3-app GitHub repository](https://github.com/t3-os
 ## How do I deploy this?
 
 Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+
+## Start locally
+
+`git clone` this repo
+
+### Run following commands:
+
+`npm i`
+
+`npm run postinstall`
+
+`npm run dev`
+
+App will start on [`http://localhost:3000/`](http://localhost:3000/)

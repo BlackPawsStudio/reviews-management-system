@@ -58,6 +58,8 @@ export const DashboardPage = ({
 
   const [authorFilter, setAuthorFilter] = useState<string[]>([]);
 
+  const [search, setSearch] = useState("");
+
   const [filters, setFilters] = useState<{
     search: string;
     author?: string;
@@ -117,16 +119,26 @@ export const DashboardPage = ({
     })();
   }, [params]);
 
+  const [shouldApplySearch, setShouldApplySearch] = useState(true);
+
+  useEffect(() => {
+    if (shouldApplySearch) {
+      setFilters((prev) => ({ ...prev, search }));
+      setShouldApplySearch(false);
+      setTimeout(() => {
+        setShouldApplySearch(true);
+      }, 500);
+    }
+  }, [search, shouldApplySearch]);
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-4">
       <h1 className="text-xl font-bold">Reviews Dashboard</h1>
       <div className="flex gap-x-4">
         <Input
           placeholder="Search by title"
-          value={filters.search}
-          onChange={(e) =>
-            setFilters((prev) => ({ ...prev, search: e.target.value }))
-          }
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
         <div className="relative w-full">
           <Select

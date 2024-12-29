@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import type { Review } from "~/app/page";
+import { schema } from "~/components/ReviewForm";
 
 const pageSize = 10;
 
@@ -65,18 +66,23 @@ export interface BodyData {
 export const POST = async (req: Request) => {
   const body = (await req.json()) as BodyData;
 
-  if (body) {
-    const prisma = new PrismaClient();
+  try {
+    if (!schema.parse(body)) {
+      return new Response("Invalid body", { status: 400 });
+    } else {
+      const prisma = new PrismaClient();
 
-    const review = await prisma.review.create({
-      data: {
-        ...body,
-        createdAt: new Date().toLocaleDateString(),
-      },
-    });
+      const review = await prisma.review.create({
+        data: {
+          ...body,
+          createdAt: new Date().toLocaleDateString(),
+        },
+      });
 
-    return Response.json({ data: review });
+      return Response.json({ data: review });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e) {
+    return new Response("Invalid body", { status: 400 });
   }
-
-  return new Response("Invalid body", { status: 400 });
 };
